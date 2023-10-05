@@ -1,6 +1,16 @@
-const body_parser = require('body-parser')
+// const body_parser = require('body-parser')
+
 const express = require('express');
 const app = express();
+
+const mongoose = require('mongoose');
+
+mongoose
+    .connect('mongodb+srv://nodejs123:nodejs123@node.kjvtwn8.mongodb.net/Arab?retryWrites=true&w=majority')
+    .then(() => {
+        console.log('connected successfully')
+        })   
+
 const coursesRouter = require("./routes/courses.routes")
 
 

@@ -1,19 +1,28 @@
 let {courses} = require('../data/courses');
 const { validationResult } = require('express-validator')
+const CoursesDB = require('../models/course.model');
 
-const getAllCourses = (req, res) => {
+const getAllCourses = async (req, res) => {
+    const courses = await CoursesDB.find();
     res.json(courses)
 }
 
-const getCourse = (req, res) => {
-    const courseId = req.params.id;
-    const course = courses.find(course => course.id === parseInt(courseId))
-    if(!course)   res.status(404).send('Not Found course')
+const getCourse = async (req, res) => {
+    try{
+        const course = await CoursesDB.findById(req.params.id)
 
-    res.json(course)
+        if(!course) {
+          return res.status(404).send('Not Found course')
+        }
+    
+        return res.json(course)
+    } catch(err) {
+        return res.status(404).send('Not Valid Object ID')
+    }
+
 }
 
-const createCourse = (req, res) => {
+const createCourse = async (req, res) => {
 
     const errors = validationResult(req);
     
@@ -21,38 +30,34 @@ const createCourse = (req, res) => {
         return res.status(400).json(errors.array())
     }
 
-    const course = { id: courses.length + 1, ...req.body }
-    courses.push(course)
+    const course = new CoursesDB(req.body)
+
+    await course.save()
 
     res.status(201).json(course)
 }
 
-const updateCourse = (req, res) => {
+const updateCourse = async (req, res) => {
     const id = req.params.id;
-    const findCourse = courses.find(course => course.id === parseInt(id));
-
-    if(!findCourse){
-        return res.status(400).json('Course Not Found');
+    try{
+        const findCourse = await CoursesDB.updateOne({_id: id}, {$set: { ...req.body}})
+        return res.status(200).json(findCourse)
+    
+    } catch(err) {
+        return res.status(400).send('Not Valid Object ID')
     }
-
-    const course = {...findCourse, ...req.body};
-
-    res.status(200).json(course)
-
 }
 
-const deleteCourse = (req, res) => {
-
-    const id = +req.params.id;
-    const findCourse = courses.find(course => course.id === parseInt(id));
-
-    if(!findCourse){
-        return res.status(400).json('Course Not Found');
+const deleteCourse = async (req, res) => {
+    const id = req.params.id;
+    try{
+        const deleted = await CoursesDB.deleteOne({_id: id})
+    
+        res.status(200).json({success: true, deleted});
+    } catch(err) {
+        return res.status(400).send('Not Valid Object ID')
     }
 
-    courses = courses.filter(course => course.id !== id)
-
-    res.status(200).json(courses);
 }
 
 module.exports = {
