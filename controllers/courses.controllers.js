@@ -1,64 +1,69 @@
 let {courses} = require('../data/courses');
 const { validationResult } = require('express-validator')
 const CoursesDB = require('../models/course.model');
+const asyncWrapper = require('../middlewares/asyncWrapper');
+const AppError = require('../utils/appError');
 
-const getAllCourses = async (req, res) => {
-    const courses = await CoursesDB.find();
-    res.json(courses)
-}
+const getAllCourses = asyncWrapper(
+    async (req, res) => {
 
-const getCourse = async (req, res) => {
-    try{
+        const limit = req.query.limit || 0;
+        const page = req.query.page || 1;
+        const skip = (page - 1) * limit;
+
+        const courses = await CoursesDB.find({}, {'__v': false}).limit(limit).skip(skip);
+        res.json({status: 'success', data : courses})
+
+    }
+)
+
+const getCourse = asyncWrapper( 
+    async (req, res, next) => {
+        
         const course = await CoursesDB.findById(req.params.id)
-
         if(!course) {
-          return res.status(404).send('Not Found course')
+            const error = AppError.create('Not Found course' , 404, 'fail')
+            next(error)
         }
-    
-        return res.json(course)
-    } catch(err) {
-        return res.status(404).send('Not Valid Object ID')
+        return res.json({status: 'success', data: { course }})
     }
+)
 
-}
+const createCourse = asyncWrapper(
+        async (req, res, next) => {
 
-const createCourse = async (req, res) => {
+        const errors = validationResult(req);
+        
+        if(!errors.isEmpty()){
 
-    const errors = validationResult(req);
-    
-    if(!errors.isEmpty()){
-        return res.status(400).json(errors.array())
+            const error = AppError.create(errors.array(), 400, 'fail');
+            next(error)
+        }
+
+        const course = new CoursesDB(req.body)
+
+        await course.save()
+
+        res.status(201).json({status: 'success', data: { course }})
     }
+)
 
-    const course = new CoursesDB(req.body)
-
-    await course.save()
-
-    res.status(201).json(course)
-}
-
-const updateCourse = async (req, res) => {
-    const id = req.params.id;
-    try{
+const updateCourse = asyncWrapper(
+    
+    async (req, res, next) => {
+        const id = req.params.id;
         const findCourse = await CoursesDB.updateOne({_id: id}, {$set: { ...req.body}})
-        return res.status(200).json(findCourse)
-    
-    } catch(err) {
-        return res.status(400).send('Not Valid Object ID')
+        res.status(200).json({status: 'success', data: { course: findCourse}})
     }
-}
+)
 
-const deleteCourse = async (req, res) => {
-    const id = req.params.id;
-    try{
+const deleteCourse = asyncWrapper(
+    async (req, res) => {
+        const id = req.params.id;
         const deleted = await CoursesDB.deleteOne({_id: id})
-    
-        res.status(200).json({success: true, deleted});
-    } catch(err) {
-        return res.status(400).send('Not Valid Object ID')
+        res.status(200).json({status: 'success', data: null});
     }
-
-}
+)
 
 module.exports = {
     getAllCourses,
