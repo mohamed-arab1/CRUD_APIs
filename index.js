@@ -15,6 +15,7 @@ mongoose
         })   
 
 const coursesRouter = require("./routes/courses.routes")
+const userRouter = require("./routes/users.routes")
 
 
 app.use(cors())
@@ -23,6 +24,7 @@ app.use(cors())
 app.use(express.json())
 
 app.use('/api/courses', coursesRouter)
+app.use('/api/users', userRouter)
 
 app.all('*', (req, res, next) => {
     return res.status(404).json({status: 'error', message: 'This resource is not available'})
