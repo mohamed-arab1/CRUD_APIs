@@ -3,7 +3,7 @@ require('dotenv').config();
 const cors = require('cors');
 const express = require('express');
 const app = express();
-
+const path = require('node:path')
 const mongoose = require('mongoose');
 
 const uri = process.env.MONGO_URL;
@@ -17,6 +17,7 @@ mongoose
 const coursesRouter = require("./routes/courses.routes")
 const userRouter = require("./routes/users.routes")
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 app.use(cors())
 
